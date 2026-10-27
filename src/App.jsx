@@ -7,9 +7,16 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('terminal'); // terminal, bot, volume, grid, signals, whales, settings
 
   // API Anahtarları (localStorage üzerinden güvenli yönetim)
-  const [openRouterKey, setOpenRouterKey] = useState(localStorage.getItem('openrouter_key') || '');
-  const [groqKey, setGroqKey] = useState(localStorage.getItem('groq_key') || '');
-  const [gcpKey, setGcpKey] = useState(localStorage.getItem('gcp_key') || '');
+  const [openRouterKey, setOpenRouterKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
+  const [gcpKey, setGcpKey] = useState('');
+
+  // Anahtarların kayıtlı olup olmadığını takip etmek için state'ler
+  const [keysSaved, setKeysSaved] = useState({
+    openrouter: !!localStorage.getItem('openrouter_key'),
+    groq: !!localStorage.getItem('groq_key'),
+    gcp: !!localStorage.getItem('gcp_key')
+  });
 
   // İşlem Paneli State'leri
   const [orderType, setOrderType] = useState('LONG');
@@ -40,13 +47,34 @@ export default function App() {
     };
   }, []);
 
-  // --- 2. API ANAHTARLARINI KAYDETME ---
+  // --- 2. API ANAHTARLARINI GÜVENLİ KAYDETME VE GİZLEME ---
   const handleSaveKeys = (e) => {
     e.preventDefault();
-    localStorage.setItem('openrouter_key', openRouterKey);
-    localStorage.setItem('groq_key', groqKey);
-    localStorage.setItem('gcp_key', gcpKey);
-    alert('API anahtarları tarayıcınızın güvenli hafızasına başarıyla kaydedildi!');
+    
+    if (openRouterKey.trim()) localStorage.setItem('openrouter_key', openRouterKey);
+    if (groqKey.trim()) localStorage.setItem('groq_key', groqKey);
+    if (gcpKey.trim()) localStorage.setItem('gcp_key', gcpKey);
+
+    // Kayıt durumunu güncelle ve inputları temizle (ekranda görünmemesi için)
+    setKeysSaved({
+      openrouter: !!localStorage.getItem('openrouter_key'),
+      groq: !!localStorage.getItem('groq_key'),
+      gcp: !!localStorage.getItem('gcp_key')
+    });
+
+    setOpenRouterKey('');
+    setGroqKey('');
+    setGcpKey('');
+
+    alert('API anahtarları tarayıcınızın güvenli hafızasına kaydedildi ve ekrandan gizlendi!');
+  };
+
+  const handleClearKeys = () => {
+    localStorage.removeItem('openrouter_key');
+    localStorage.removeItem('groq_key');
+    localStorage.removeItem('gcp_key');
+    setKeysSaved({ openrouter: false, groq: false, gcp: false });
+    alert('Tüm kayıtlı anahtarlar silindi.');
   };
 
   return (
@@ -119,7 +147,6 @@ export default function App() {
       {/* İÇERİK SEKMELERİ */}
       {activeTab === 'terminal' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* SOL: EMİR DEFTERİ & SON İŞLEMLER */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md">
             <h2 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">⚡ Emir Defteri (WebSocket Aktif)</h2>
             <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1 font-mono text-xs mb-4">
@@ -157,7 +184,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* ORTA: GRAFİK & ANALİZ */}
           <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center mb-4">
@@ -170,10 +196,8 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Mum Grafik Görsel Simülasyonu */}
               <div className="h-[280px] bg-slate-950 rounded-lg border border-slate-800 flex items-end justify-center gap-3 p-4 relative overflow-hidden">
                 <div className="absolute top-3 left-3 text-xs text-emerald-400 font-mono">Binance WebSocket Canlı Akış Entegre Grafik</div>
-                {/* Örnek Mum Çubukları */}
                 {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 85, 100].map((h, i) => (
                   <div key={i} className="w-4 flex flex-col items-center">
                     <div className="w-0.5 bg-slate-500 h-full absolute"></div>
@@ -186,9 +210,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* HIZLI İŞLEM & VARLIKLAR */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* İşlem Paneli */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
                 <div className="flex justify-between mb-3">
                   <button 
@@ -228,7 +250,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Varlıklar */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between font-mono">
                 <div>
                   <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">💰 Kullanıcı Varlıkları</span>
@@ -341,8 +362,21 @@ export default function App() {
         <div className="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md">
           <h2 className="text-lg font-bold mb-2">⚙️ Güvenli API Anahtarı Ayarları</h2>
           <p className="text-sm text-slate-400 mb-6">
-            GitHub güvenlik taramalarına takılmamak için anahtarlarınız doğrudan koda yazılmaz; yalnızca tarayıcınızın güvenli <code className="text-emerald-400">localStorage</code> alanında saklanır.
+            Anahtarlarınız tarayıcınızın <code className="text-emerald-400">localStorage</code> alanında güvenle saklanır. Kaydettikten sonra ekrandan otomatik olarak gizlenir.
           </p>
+
+          {/* Kayıt Durumu Göstergesi */}
+          <div className="grid grid-cols-3 gap-2 mb-6 text-xs font-mono">
+            <div className={`p-2.5 rounded border text-center ${keysSaved.openrouter ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
+              OpenRouter: {keysSaved.openrouter ? 'Kayıtlı ✓' : 'Yok'}
+            </div>
+            <div className={`p-2.5 rounded border text-center ${keysSaved.groq ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
+              Groq: {keysSaved.groq ? 'Kayıtlı ✓' : 'Yok'}
+            </div>
+            <div className={`p-2.5 rounded border text-center ${keysSaved.gcp ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-slate-950 border-slate-800 text-slate-500'}`}>
+              GCP: {keysSaved.gcp ? 'Kayıtlı ✓' : 'Yok'}
+            </div>
+          </div>
 
           <form onSubmit={handleSaveKeys} className="space-y-4">
             <div>
@@ -351,7 +385,7 @@ export default function App() {
                 type="password" 
                 value={openRouterKey}
                 onChange={(e) => setOpenRouterKey(e.target.value)}
-                placeholder="sk-or-v1-..."
+                placeholder={keysSaved.openrouter ? "•••••••••••••••• (Kayıtlı - Değiştirmek için yazın)" : "sk-or-v1-..."}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
@@ -362,7 +396,7 @@ export default function App() {
                 type="password" 
                 value={groqKey}
                 onChange={(e) => setGroqKey(e.target.value)}
-                placeholder="gsk_..."
+                placeholder={keysSaved.groq ? "•••••••••••••••• (Kayıtlı - Değiştirmek için yazın)" : "gsk_..."}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
@@ -373,17 +407,26 @@ export default function App() {
                 type="password" 
                 value={gcpKey}
                 onChange={(e) => setGcpKey(e.target.value)}
-                placeholder="AIzaSy..."
+                placeholder={keysSaved.gcp ? "•••••••••••••••• (Kayıtlı - Değiştirmek için yazın)" : "AIzaSy..."}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
             </div>
 
-            <button 
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg transition shadow-lg mt-4 text-sm"
-            >
-              Anahtarları Güvenle Kaydet
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button 
+                type="submit"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg transition shadow-lg text-sm"
+              >
+                Anahtarları Güvenle Kaydet & Gizle
+              </button>
+              <button 
+                type="button"
+                onClick={handleClearKeys}
+                className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-800 px-4 py-2.5 rounded-lg text-sm transition"
+              >
+                Hepsini Temizle
+              </button>
+            </div>
           </form>
         </div>
       )}
