@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // Kesin çözüm için burası './' olmalıdır
+  base: '/OKXYENI/', // Kesinlikle tam depo adınız olmalı
 })
